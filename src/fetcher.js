@@ -63,6 +63,43 @@ async function fetchWithToken(endpoint, options = {}) {
   return response.json();
 }
 
+export function calculateTotalStars(repositories) {
+  if (!repositories || !repositories.nodes) return 0;
+  return repositories.nodes.reduce((acc, repo) => acc + (repo.stargazerCount || 0), 0);
+}
+
+export function calculateTotalForks(repositories) {
+  if (!repositories || !repositories.nodes) return 0;
+  return repositories.nodes.reduce((acc, repo) => acc + (repo.forkCount || 0), 0);
+}
+
+export function calculateTopLanguages(repositories) {
+  const langCounts = {};
+  const langColors = {};
+
+  if (!repositories || !repositories.nodes) return [];
+
+  repositories.nodes.forEach(repo => {
+    if (repo.languages && repo.languages.nodes && repo.languages.nodes.length > 0) {
+      const lang = repo.languages.nodes[0]; // Primary language
+      if (lang) {
+        langCounts[lang.name] = (langCounts[lang.name] || 0) + 1;
+        langColors[lang.name] = lang.color;
+      }
+    }
+  });
+
+  // Sort by count
+  return Object.keys(langCounts)
+    .map(name => ({
+      name,
+      count: langCounts[name],
+      color: langColors[name]
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3); // Top 3
+}
+
 export function calculateStreaks(weeks) {
   let currentStreak = 0;
   let longestStreak = 0;
@@ -149,8 +186,35 @@ export async function getContributionStats(username) {
         avatarUrl
         followers { totalCount }
         following { totalCount }
-        repositories(first: 1, ownerAffiliations: OWNER, orderBy: {field: UPDATED_AT, direction: DESC}) {
+        repositories(first: 100, ownerAffiliations: OWNER, orderBy: {field: UPDATED_AT, direction: DESC}) {
+          nodes {
+            name
+            stargazerCount
+            forkCount
+            languages(first: 1, orderBy: {field: SIZE, direction: DESC}) {
+              nodes {
+                name
+                color
+              }
+            }
+          }
           totalCount
+        }
+        issues(first: 10, states: OPEN) {
+          totalCount
+          nodes {
+            title
+            number
+            repository { name }
+          }
+        }
+        pullRequests(first: 10, states: OPEN) {
+          totalCount
+          nodes {
+            title
+            number
+            repository { name }
+          }
         }
         contributionsCollection {
           contributionCalendar {
@@ -227,11 +291,33 @@ export async function getMockStats() {
     user: {
       name: "Mock User",
       login: "mockuser",
+      bio: "Full Stack Developer | Open Source Enthusiast\nLove building CLI tools!",
       followers: { totalCount: 123 },
       repositories: { totalCount: 42 } // In case structure differs
     },
     stats: {
-      repositories: { totalCount: 42 },
+      repositories: { 
+          totalCount: 42,
+          nodes: [
+              { name: "repo-a", stargazerCount: 150, forkCount: 20, languages: { nodes: [{ name: "JavaScript", color: "#f1e05a" }] } },
+              { name: "repo-b", stargazerCount: 50, forkCount: 5, languages: { nodes: [{ name: "JavaScript", color: "#f1e05a" }] } },
+              { name: "repo-c", stargazerCount: 300, forkCount: 45, languages: { nodes: [{ name: "Rust", color: "#dea584" }] } },
+              { name: "repo-d", stargazerCount: 10, forkCount: 2, languages: { nodes: [{ name: "Python", color: "#3572A5" }] } },
+          ]
+      },
+      issues: {
+          totalCount: 5,
+          nodes: [
+              { title: "Bug fix", number: 101, repository: { name: "repo-a" } },
+              { title: "Feature req", number: 102, repository: { name: "repo-b" } }
+          ]
+      },
+      pullRequests: {
+          totalCount: 3,
+          nodes: [
+              { title: "New feature", number: 201, repository: { name: "repo-a" } }
+          ]
+      },
       followers: { totalCount: 123 },
       contributionsCollection: {
         contributionCalendar: {

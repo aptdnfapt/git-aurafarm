@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useStdout, useInput, useApp } from 'ink';
-import { fetchAllStats, calculateStreaks } from './fetcher.js';
+import { fetchAllStats, calculateStreaks, calculateTopLanguages, calculateTotalStars, calculateTotalForks } from './fetcher.js';
 import { themes } from './themes.js';
 
 const InputHandler = ({ toggleTheme }) => {
@@ -78,22 +78,125 @@ const Calendar = ({ weeks, theme }) => {
   );
 };
 
-const UserStats = ({ user, stats, theme }) => {
-  const streaks = calculateStreaks(stats.contributionsCollection.contributionCalendar.weeks);
+const ProgressBar = ({ percent, color, width = 20 }) => {
+  const filled = Math.round((percent / 100) * width);
+  const empty = width - filled;
+  return (
+    <Text>
+      <Text color={color}>{"█".repeat(filled)}</Text>
+      <Text color="gray">{"░".repeat(empty)}</Text>
+    </Text>
+  );
+};
+
+const Overview = ({ user, stats, theme }) => {
+  const stars = calculateTotalStars(stats.repositories);
+  const forks = calculateTotalForks(stats.repositories);
 
   return (
-    <Box flexDirection="column" marginLeft={2}>
-      <Text bold color={theme.title}>{user.name || user.login}</Text>
-      <Text>@{user.login}</Text>
-      <Box marginTop={1} flexDirection="column">
-         <Text>Repositories: <Text color={theme.text}>{stats.repositories.totalCount}</Text></Text>
-         <Text>Followers:    <Text color={theme.text}>{user.followers?.totalCount || stats.followers?.totalCount}</Text></Text>
-         <Text>Contributions:<Text color={theme.text}>{stats.contributionsCollection.contributionCalendar.totalContributions}</Text></Text>
-         <Box marginTop={1}>
-            <Text>Streak: <Text color={theme.text}>{streaks.current} days</Text></Text>
-            <Text> (Max: <Text color={theme.text}>{streaks.longest}</Text>)</Text>
-         </Box>
-      </Box>
+    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} title="Overview" paddingX={1}>
+       <Box justifyContent="space-between">
+         <Text color={theme.text}>Repositories</Text>
+         <Text>{stats.repositories.totalCount}</Text>
+       </Box>
+       <Box justifyContent="space-between">
+         <Text color={theme.text}>Followers</Text>
+         <Text>{user.followers?.totalCount || stats.followers?.totalCount}</Text>
+       </Box>
+       <Box justifyContent="space-between">
+         <Text color={theme.text}>Stars</Text>
+         <Text>{stars}</Text>
+       </Box>
+       <Box justifyContent="space-between">
+         <Text color={theme.text}>Forks</Text>
+         <Text>{forks}</Text>
+       </Box>
+    </Box>
+  );
+};
+
+const Languages = ({ stats, theme }) => {
+  const topLangs = calculateTopLanguages(stats.repositories);
+  // Calculate total count to determine percentage
+  const total = topLangs.reduce((acc, curr) => acc + curr.count, 0);
+
+  return (
+    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} title="Languages" paddingX={1} flexGrow={1}>
+      {topLangs.map(lang => {
+        const percent = (lang.count / total) * 100;
+        return (
+          <Box key={lang.name} flexDirection="row" justifyContent="space-between">
+             <Box width={12}><Text color={theme.text}>{lang.name}</Text></Box>
+             <Box marginRight={2}><ProgressBar percent={percent} color={lang.color} width={15} /></Box>
+             <Text>{Math.round(percent)}%</Text>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
+
+const Achievements = ({ stats, theme }) => {
+  const streaks = calculateStreaks(stats.contributionsCollection.contributionCalendar.weeks);
+  const total = stats.contributionsCollection.contributionCalendar.totalContributions;
+  
+  return (
+    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} title="Achievements" paddingX={1} marginTop={0}>
+       <Box flexDirection="row" justifyContent="space-between">
+          <Text>🔥 Current Streak</Text>
+          <Text color={theme.text}>{streaks.current} days</Text>
+       </Box>
+       <Box flexDirection="row" justifyContent="space-between">
+          <Text>🏆 Longest Streak</Text>
+          <Text color={theme.text}>{streaks.longest} days</Text>
+       </Box>
+       <Box flexDirection="row" justifyContent="space-between">
+          <Text>💎 Total Contribs</Text>
+          <Text color={theme.text}>{total}</Text>
+       </Box>
+    </Box>
+  );
+};
+
+const ActivityItem = ({ item, theme }) => (
+  <Box marginLeft={1}>
+    <Text>
+      <Text color="gray">• </Text>
+      <Text>{item.title.slice(0, 20)}{item.title.length > 20 ? '…' : ''}</Text>
+      <Text color="gray" dimColor> ({item.repository.name})</Text>
+    </Text>
+  </Box>
+);
+
+const Activity = ({ stats, theme }) => {
+  return (
+    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} title="Activity" paddingX={1} marginTop={0} flexGrow={1}>
+       <Box flexDirection="column">
+          <Box justifyContent="space-between">
+            <Text bold color={theme.title}>Pull Requests</Text>
+            <Text color="gray">{stats.pullRequests.totalCount}</Text>
+          </Box>
+          {stats.pullRequests.nodes.length === 0 ? (
+             <Text color="gray" italic>  None</Text>
+          ) : (
+             stats.pullRequests.nodes.slice(0, 3).map(pr => (
+                <ActivityItem key={pr.number} item={pr} theme={theme} />
+             ))
+          )}
+       </Box>
+       <Box flexDirection="column" marginTop={1}>
+          <Box justifyContent="space-between">
+            <Text bold color={theme.title}>Issues</Text>
+            <Text color="gray">{stats.issues.totalCount}</Text>
+          </Box>
+          {stats.issues.nodes.length === 0 ? (
+             <Text color="gray" italic>  None</Text>
+          ) : (
+             stats.issues.nodes.slice(0, 3).map(issue => (
+                <ActivityItem key={issue.number} item={issue} theme={theme} />
+             ))
+          )}
+       </Box>
     </Box>
   );
 };
@@ -132,30 +235,35 @@ const App = ({ flags }) => {
   return (
     <Box flexDirection="column" padding={1} height="100%">
       {process.stdin.isTTY && <InputHandler toggleTheme={toggleTheme} />}
-      <Box flexDirection="row">
-        {/* ASCII Art Placeholder */}
-        <Box borderStyle="single" borderColor={currentTheme.border} padding={1}>
-            <Text color={currentTheme.title}>
-              {`
-   __...--~~~~~-._   _.-~~~~~--...__
- //               \`V'               \\
-//                 |                 \\
-//__...--~~~~~~-._  |  _.-~~~~~~--...__\\
-//__.....----~~~~._\\ | /_.~~~~----.....__\\
-===================\\|/===================
-              gitfetch-js
-              `}
-            </Text>
-        </Box>
-        
-        <UserStats user={data.user} stats={data.stats} theme={currentTheme} />
-      </Box>
       
-      <Calendar 
-        weeks={data.stats.contributionsCollection.contributionCalendar.weeks} 
-        theme={currentTheme}
-      />
-      {process.stdin.isTTY && <Text color="gray" italic>Press 'q' to quit</Text>}
+      {/* Top Section: Header & Calendar */}
+      <Box flexDirection="column" marginBottom={1}>
+         <Box justifyContent="center" marginBottom={1} flexDirection="column" alignItems="center">
+            <Text bold color={currentTheme.title} markup>{data.user.name || data.user.login} <Text color="gray">(@{data.user.login})</Text></Text>
+            {data.user.bio && <Text italic color="gray">{data.user.bio.replace(/\n/g, ' ')}</Text>}
+         </Box>
+         <Calendar 
+            weeks={data.stats.contributionsCollection.contributionCalendar.weeks} 
+            theme={currentTheme}
+         />
+      </Box>
+
+      {/* Bottom Section: Split View */}
+      <Box flexDirection="row" gap={1}>
+         {/* Left Column */}
+         <Box flexDirection="column" width="40%" gap={0}>
+            <Overview user={data.user} stats={data.stats} theme={currentTheme} />
+            <Achievements stats={data.stats} theme={currentTheme} />
+         </Box>
+
+         {/* Right Column */}
+         <Box flexDirection="column" width="60%" gap={0}>
+            <Languages stats={data.stats} theme={currentTheme} />
+            <Activity stats={data.stats} theme={currentTheme} />
+         </Box>
+      </Box>
+
+      {process.stdin.isTTY && <Box marginTop={1}><Text color="gray" italic>Press 't' to toggle theme • 'q' to quit</Text></Box>}
     </Box>
   );
 };
