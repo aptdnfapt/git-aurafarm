@@ -1,6 +1,6 @@
-# gitfetch-js
+# git-aurafarm
 
-A Node.js based rewrite of [gitfetch](https://github.com/Matars/gitfetch), providing a beautiful, responsive terminal interface for your GitHub statistics.
+A beautiful terminal interface for your GitHub statistics.
 
 ## Features
 
@@ -18,11 +18,24 @@ A Node.js based rewrite of [gitfetch](https://github.com/Matars/gitfetch), provi
 
 ## Usage
 
-You can run it directly using `npx` (once published) or locally.
+### Global Install
+```bash
+npm install -g git-aurafarm
+git-aurafarm
+```
+
+### NPX (no install required)
+```bash
+npx git-aurafarm
+```
 
 ### Run Locally
 
-1. Clone the repo (or use the created directory).
+1. Clone the repo:
+   ```bash
+   git clone <repo-url>
+   cd git-aurafarm
+   ```
 2. Install dependencies:
    ```bash
    npm install
@@ -56,3 +69,7 @@ To build for production/npx:
 ```bash
 npm run build
 ```
+
+---
+
+> **Name origin:** Was watching too many Minecraft videos and couldn't come up with a good name 💀 [Reference](https://youtu.be/3V7Rvo4Gvic?si=Vd_OtfFLSy05yXmb)

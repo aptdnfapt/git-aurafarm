@@ -3,7 +3,7 @@ import { Box, Text, useStdout, useInput, useApp } from 'ink';
 import { fetchAllStats, calculateStreaks, calculateTopLanguages, calculateTotalStars, calculateTotalForks } from './fetcher.js';
 import { themes } from './themes.js';
 
-const InputHandler = ({ toggleTheme }) => {
+const InputHandler = ({ toggleTheme, previousTheme }) => {
   const { exit } = useApp();
   useInput((input, key) => {
     if (input === 'q' || key.escape) {
@@ -11,6 +11,9 @@ const InputHandler = ({ toggleTheme }) => {
     }
     if (input === 't') {
       toggleTheme();
+    }
+    if (input === 'T') {
+      previousTheme();
     }
   });
   return null;
@@ -257,6 +260,10 @@ const App = ({ flags }) => {
     setThemeIndex((prev) => (prev + 1) % themes.length);
   };
 
+  const previousTheme = () => {
+    setThemeIndex((prev) => (prev - 1 + themes.length) % themes.length);
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -282,7 +289,7 @@ const App = ({ flags }) => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      {process.stdin.isTTY && <InputHandler toggleTheme={toggleTheme} />}
+      {process.stdin.isTTY && <InputHandler toggleTheme={toggleTheme} previousTheme={previousTheme} />}
 
       {/* Header */}
       <Box flexDirection="row" justifyContent="space-between" marginBottom={1} borderStyle="single" borderBottomColor="gray" borderTop={false} borderLeft={false} borderRight={false} paddingBottom={1}>
@@ -290,7 +297,7 @@ const App = ({ flags }) => {
           <Text bold color={currentTheme.title} size="large">{data.user.name || data.user.login}</Text>
           <Text color="gray"> (@{data.user.login})</Text>
         </Box>
-        <Text color="gray">gitfetch v1.0.0</Text>
+         <Text color="gray">git-aurafarm v1.0.0</Text>
       </Box>
 
       <Box flexDirection="row" gap={2}>
@@ -329,7 +336,7 @@ const App = ({ flags }) => {
       
       {/* Footer */}
       <Box marginTop={1} justifyContent="center">
-         <Text color="gray" dimColor>Theme: {currentTheme.name} (t) • Quit (q)</Text>
+         <Text color="gray" dimColor>Theme: {currentTheme.name} (t/T) • Quit (q)</Text>
       </Box>
     </Box>
   );

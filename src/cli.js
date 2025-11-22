@@ -6,24 +6,19 @@ import App from './app.js';
 
 const cli = meow(`
 	Usage
-	  $ gitfetch
+	  $ git-aurafarm
 
 	Options
 	  --name   Your name
 	     --mock   Use mock data for testing
-	     --local  Fetch stats from local git repository
 
 	Examples
-	  $ gitfetch
-	     $ gitfetch --mock
-	     $ gitfetch --local
+	  $ git-aurafarm
+	     $ git-aurafarm --mock
 `, {
   importMeta: import.meta,
   flags: {
     mock: {
-      type: 'boolean'
-    },
-    local: {
       type: 'boolean'
     }
   }

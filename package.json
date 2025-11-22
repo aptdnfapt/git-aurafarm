@@ -1,7 +1,7 @@
 {
-  "name": "gitfetch",
+  "name": "git-aurafarm",
   "version": "1.0.0",
-  "description": "",
+  "description": "A beautiful terminal interface for your GitHub statistics",
   "main": "index.js",
   "type": "module",
   "bin": "dist/cli.js",
@@ -10,9 +10,17 @@
     "start": "npm run build && node dist/cli.js",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [],
+  "keywords": ["git", "github", "cli", "terminal", "stats"],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aptdnfapt/git-aurafarm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aptdnfapt/git-aurafarm/issues"
+  },
+  "homepage": "https://github.com/aptdnfapt/git-aurafarm#readme",
   "dependencies": {
     "execa": "^9.6.0",
     "ink": "^6.5.1",
