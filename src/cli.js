@@ -16,13 +16,17 @@ const cli = meow(`
 	  $ git-aurafarm
 	     $ git-aurafarm --mock
 `, {
-  importMeta: import.meta,
+  importMeta: createImportMeta(import.meta.url),
   flags: {
     mock: {
       type: 'boolean'
     }
   }
 });
+
+function createImportMeta(url) {
+  return { url };
+}
 
 // Clear screen before initial render to help with cleanliness
 console.clear();

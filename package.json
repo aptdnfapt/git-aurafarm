@@ -3,14 +3,20 @@
   "version": "1.0.0",
   "description": "A beautiful terminal interface for your GitHub statistics",
   "main": "index.js",
-  "type": "module",
-  "bin": "dist/cli.js",
+
+  "bin": "dist/git-aurafarm",
   "scripts": {
-    "build": "babel src -d dist",
-    "start": "npm run build && node dist/cli.js",
+    "build": "esbuild src/cli.js --bundle --platform=node --outfile=dist/git-aurafarm --format=esm --minify --external:execa --external:ink --external:meow --external:react --external:react-reconciler --loader:.js=jsx && sed -i '1s|^.*|#!/usr/bin/env node|' dist/git-aurafarm",
+    "start": "npm run build && node dist/git-aurafarm",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["git", "github", "cli", "terminal", "stats"],
+  "keywords": [
+    "git",
+    "github",
+    "cli",
+    "terminal",
+    "stats"
+  ],
   "author": "",
   "license": "MIT",
   "repository": {
@@ -31,6 +37,7 @@
     "@babel/cli": "^7.28.3",
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
-    "@babel/preset-react": "^7.28.5"
+    "@babel/preset-react": "^7.28.5",
+    "esbuild": "^0.27.0"
   }
 }
