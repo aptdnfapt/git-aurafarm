@@ -2,6 +2,14 @@
 
 A beautiful terminal interface for your GitHub statistics.
 
+## Screenshots
+
+### Default Theme
+![Default Theme](images/showcase-default.png)
+
+### Catppuccin Theme
+![Catppuccin Theme](images/showcase-catppuchine.png)
+
 ## Features
 
 - **Responsive Design**: The contribution calendar automatically scales to fit your terminal window.
