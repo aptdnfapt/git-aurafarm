@@ -74,40 +74,62 @@ export function calculateTotalForks(repositories) {
 }
 
 export function calculateTopLanguages(repositories) {
-  const langCounts = {};
+  const langSizes = {};
   const langColors = {};
 
   if (!repositories || !repositories.nodes) return [];
 
   repositories.nodes.forEach(repo => {
-    if (repo.languages && repo.languages.nodes && repo.languages.nodes.length > 0) {
-      const lang = repo.languages.nodes[0]; // Primary language
-      if (lang) {
-        langCounts[lang.name] = (langCounts[lang.name] || 0) + 1;
-        langColors[lang.name] = lang.color;
-      }
+    if (repo.languages && repo.languages.edges) {
+      repo.languages.edges.forEach(edge => {
+        const langName = edge.node.name;
+        const langSize = edge.size;
+        const langColor = edge.node.color;
+
+        langSizes[langName] = (langSizes[langName] || 0) + langSize;
+        langColors[langName] = langColor;
+      });
     }
   });
 
-  // Sort by count
-  return Object.keys(langCounts)
+  const totalSize = Object.values(langSizes).reduce((a, b) => a + b, 0);
+  
+  const sortedLangs = Object.keys(langSizes)
     .map(name => ({
       name,
-      count: langCounts[name],
+      size: langSizes[name],
       color: langColors[name]
     }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 3); // Top 3
+    .sort((a, b) => b.size - a.size);
+
+  const top5 = sortedLangs.slice(0, 5);
+  const othersSize = sortedLangs.slice(5).reduce((acc, curr) => acc + curr.size, 0);
+
+  const result = top5.map(lang => ({
+    ...lang,
+    percent: totalSize > 0 ? (lang.size / totalSize) * 100 : 0
+  }));
+
+  if (othersSize > 0) {
+    result.push({
+      name: "Others",
+      size: othersSize,
+      color: "#8b949e", // Gray
+      percent: totalSize > 0 ? (othersSize / totalSize) * 100 : 0
+    });
+  }
+
+  return result;
 }
 
 export function calculateStreaks(weeks) {
   let currentStreak = 0;
   let longestStreak = 0;
   let tempStreak = 0;
-  
+
   // Flatten weeks into a single array of days
   const days = weeks.flatMap(w => w.contributionDays);
-  
+
   // Sort by date just in case, though usually they are sorted
   // days.sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -126,31 +148,31 @@ export function calculateStreaks(weeks) {
       // Standard streak logic usually breaks on 0.
       // GitHub logic: if today is 0, streak is still valid from yesterday.
       if (day.date !== today) {
-          tempStreak = 0;
+        tempStreak = 0;
       }
     }
   }
 
   // Current streak calculation is tricky from forward iteration.
   // Better to go backwards for current streak.
-  
+
   let current = 0;
   // Check from end
   for (let i = days.length - 1; i >= 0; i--) {
-      const day = days[i];
-      // If it's today and 0, skip/continue to yesterday
-      if (day.date === today && day.contributionCount === 0) continue;
-      
-      if (day.contributionCount > 0) {
-          current++;
-      } else {
-          break;
-      }
+    const day = days[i];
+    // If it's today and 0, skip/continue to yesterday
+    if (day.date === today && day.contributionCount === 0) continue;
+
+    if (day.contributionCount > 0) {
+      current++;
+    } else {
+      break;
+    }
   }
 
   return {
-      current: current,
-      longest: longestStreak
+    current: current,
+    longest: longestStreak
   };
 }
 
@@ -191,10 +213,13 @@ export async function getContributionStats(username) {
             name
             stargazerCount
             forkCount
-            languages(first: 1, orderBy: {field: SIZE, direction: DESC}) {
-              nodes {
-                name
-                color
+            languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+              edges {
+                size
+                node {
+                  name
+                  color
+                }
               }
             }
           }
@@ -234,13 +259,13 @@ export async function getContributionStats(username) {
 
   // Try GITHUB_TOKEN
   if (process.env.GITHUB_TOKEN) {
-     return await fetchWithToken("/graphql", {
-        method: "POST",
-        body: JSON.stringify({
-           query,
-           variables: { userName: username }
-        })
-     });
+    return await fetchWithToken("/graphql", {
+      method: "POST",
+      body: JSON.stringify({
+        query,
+        variables: { userName: username }
+      })
+    });
   }
 
   // Fallback to gh CLI
@@ -255,6 +280,103 @@ export async function getContributionStats(username) {
 }
 
 
+export async function getLocalStats() {
+  try {
+    if (!fs.existsSync('.git')) {
+      throw new Error("No .git directory found. Please run this command from the root of a git repository.");
+    }
+
+    let name = "Local User";
+    let email = "local";
+
+    try {
+      const { stdout } = await execa('git', ['config', 'user.name']);
+      name = stdout.trim();
+    } catch (e) {
+      // Ignore error, use default
+    }
+
+    try {
+      const { stdout } = await execa('git', ['config', 'user.email']);
+      email = stdout.trim();
+    } catch (e) {
+      // Ignore error, use default
+    }
+
+    const logArgs = ['log', '--pretty=format:%ai'];
+    if (email !== "local") {
+      logArgs.push(`--author=${email}`);
+    }
+
+    const { stdout: log } = await execa('git', logArgs);
+
+    const commits = log.split('\n').filter(Boolean);
+    const commitCounts = {};
+
+    commits.forEach(dateStr => {
+      const date = dateStr.split(' ')[0];
+      commitCounts[date] = (commitCounts[date] || 0) + 1;
+    });
+
+    const weeks = [];
+    const today = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+    oneYearAgo.setDate(oneYearAgo.getDate() - oneYearAgo.getDay());
+
+    let currentDate = new Date(oneYearAgo);
+
+    while (currentDate <= today) {
+      const contributionDays = [];
+      for (let i = 0; i < 7; i++) {
+        const dateString = currentDate.toISOString().split('T')[0];
+        const count = commitCounts[dateString] || 0;
+
+        let color = '#ebedf0';
+        if (count > 0) color = '#9be9a8';
+        if (count > 3) color = '#40c463';
+        if (count > 6) color = '#30a14e';
+        if (count > 9) color = '#216e39';
+
+        contributionDays.push({
+          contributionCount: count,
+          date: dateString,
+          color
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      weeks.push({ contributionDays });
+    }
+
+    return {
+      user: {
+        name: name || "Local User",
+        login: email || "local",
+        bio: "Local Git Repository",
+        followers: { totalCount: 0 },
+        repositories: { totalCount: 1 }
+      },
+      stats: {
+        repositories: {
+          totalCount: 1,
+          nodes: []
+        },
+        issues: { totalCount: 0, nodes: [] },
+        pullRequests: { totalCount: 0, nodes: [] },
+        followers: { totalCount: 0 },
+        contributionsCollection: {
+          contributionCalendar: {
+            totalContributions: commits.length,
+            weeks
+          }
+        }
+      }
+    };
+  } catch (e) {
+    throw new Error(`Failed to get local stats: ${e.message}`);
+  }
+}
+
 export async function getMockStats() {
   // Generate 52 weeks of random data
   const weeks = [];
@@ -262,17 +384,17 @@ export async function getMockStats() {
   for (let w = 0; w < 53; w++) {
     const contributionDays = [];
     for (let d = 0; d < 7; d++) {
-        const count = Math.floor(Math.random() * 10);
-        // Green shades
-        const color = count === 0 ? '#ebedf0' : 
-                      count < 3 ? '#9be9a8' : 
-                      count < 6 ? '#40c463' : 
-                      count < 9 ? '#30a14e' : '#216e39';
-        contributionDays.push({
-            contributionCount: count,
-            date: "2025-01-01",
-            color
-        });
+      const count = Math.floor(Math.random() * 10);
+      // Green shades
+      const color = count === 0 ? '#ebedf0' :
+        count < 3 ? '#9be9a8' :
+          count < 6 ? '#40c463' :
+            count < 9 ? '#30a14e' : '#216e39';
+      contributionDays.push({
+        contributionCount: count,
+        date: "2025-01-01",
+        color
+      });
     }
     weeks.push({ contributionDays });
   }
@@ -281,10 +403,10 @@ export async function getMockStats() {
   // Set last few days to have contributions
   const lastWeek = weeks[weeks.length - 1];
   for (let i = 0; i < 3; i++) {
-      // Make sure we have days
-      if (lastWeek.contributionDays[6-i]) {
-          lastWeek.contributionDays[6-i].contributionCount = 5;
-      }
+    // Make sure we have days
+    if (lastWeek.contributionDays[6 - i]) {
+      lastWeek.contributionDays[6 - i].contributionCount = 5;
+    }
   }
 
   return {
@@ -296,27 +418,27 @@ export async function getMockStats() {
       repositories: { totalCount: 42 } // In case structure differs
     },
     stats: {
-      repositories: { 
-          totalCount: 42,
-          nodes: [
-              { name: "repo-a", stargazerCount: 150, forkCount: 20, languages: { nodes: [{ name: "JavaScript", color: "#f1e05a" }] } },
-              { name: "repo-b", stargazerCount: 50, forkCount: 5, languages: { nodes: [{ name: "JavaScript", color: "#f1e05a" }] } },
-              { name: "repo-c", stargazerCount: 300, forkCount: 45, languages: { nodes: [{ name: "Rust", color: "#dea584" }] } },
-              { name: "repo-d", stargazerCount: 10, forkCount: 2, languages: { nodes: [{ name: "Python", color: "#3572A5" }] } },
-          ]
+      repositories: {
+        totalCount: 42,
+        nodes: [
+          { name: "repo-a", stargazerCount: 150, forkCount: 20, languages: { edges: [{ size: 5000, node: { name: "JavaScript", color: "#f1e05a" } }] } },
+          { name: "repo-b", stargazerCount: 50, forkCount: 5, languages: { edges: [{ size: 2000, node: { name: "JavaScript", color: "#f1e05a" } }] } },
+          { name: "repo-c", stargazerCount: 300, forkCount: 45, languages: { edges: [{ size: 8000, node: { name: "Rust", color: "#dea584" } }] } },
+          { name: "repo-d", stargazerCount: 10, forkCount: 2, languages: { edges: [{ size: 1000, node: { name: "Python", color: "#3572A5" } }] } },
+        ]
       },
       issues: {
-          totalCount: 5,
-          nodes: [
-              { title: "Bug fix", number: 101, repository: { name: "repo-a" } },
-              { title: "Feature req", number: 102, repository: { name: "repo-b" } }
-          ]
+        totalCount: 5,
+        nodes: [
+          { title: "Bug fix", number: 101, repository: { name: "repo-a" } },
+          { title: "Feature req", number: 102, repository: { name: "repo-b" } }
+        ]
       },
       pullRequests: {
-          totalCount: 3,
-          nodes: [
-              { title: "New feature", number: 201, repository: { name: "repo-a" } }
-          ]
+        totalCount: 3,
+        nodes: [
+          { title: "New feature", number: 201, repository: { name: "repo-a" } }
+        ]
       },
       followers: { totalCount: 123 },
       contributionsCollection: {
@@ -329,27 +451,28 @@ export async function getMockStats() {
   };
 }
 
-export async function fetchAllStats(useMock = false) {
-  if (useMock) return getMockStats();
+export async function fetchAllStats(flags = {}) {
+  if (flags.mock) return getMockStats();
+  if (flags.local) return getLocalStats();
 
   const cached = getCache();
   if (cached) {
-      // Return cached data immediately, assuming it's the same user
-      // We could improve this by storing key by user, but for MVP...
-      return cached;
+    // Return cached data immediately, assuming it's the same user
+    // We could improve this by storing key by user, but for MVP...
+    return cached;
   }
 
   const user = await getAuthenticatedUser();
   if (!user) {
     throw new Error("Please install 'gh' CLI and authenticate with 'gh auth login'");
   }
-  
+
   const stats = await getContributionStats(user.login);
   const result = {
     user: user,
     stats: stats.data.user
   };
-  
+
   setCache(result);
   return result;
 }

@@ -9,19 +9,24 @@ const cli = meow(`
 	  $ gitfetch
 
 	Options
-	  --name  Your name
-      --mock  Use mock data for testing
+	  --name   Your name
+	     --mock   Use mock data for testing
+	     --local  Fetch stats from local git repository
 
 	Examples
 	  $ gitfetch
-      $ gitfetch --mock
+	     $ gitfetch --mock
+	     $ gitfetch --local
 `, {
-	importMeta: import.meta,
-    flags: {
-        mock: {
-            type: 'boolean'
-        }
+  importMeta: import.meta,
+  flags: {
+    mock: {
+      type: 'boolean'
+    },
+    local: {
+      type: 'boolean'
     }
+  }
 });
 
 // Clear screen before initial render to help with cleanliness
