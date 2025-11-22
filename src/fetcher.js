@@ -205,6 +205,17 @@ export async function getContributionStats(username) {
       user(login: $userName) {
         name
         login
+        bio
+        company
+        location
+        websiteUrl
+        socialAccounts(first: 4) {
+          nodes {
+            provider
+            url
+            displayName
+          }
+        }
         avatarUrl
         followers { totalCount }
         following { totalCount }
@@ -353,6 +364,10 @@ export async function getLocalStats() {
         name: name || "Local User",
         login: email || "local",
         bio: "Local Git Repository",
+        company: null,
+        location: null,
+        websiteUrl: null,
+        socialAccounts: { nodes: [] },
         followers: { totalCount: 0 },
         repositories: { totalCount: 1 }
       },
@@ -414,6 +429,15 @@ export async function getMockStats() {
       name: "Mock User",
       login: "mockuser",
       bio: "Full Stack Developer | Open Source Enthusiast\nLove building CLI tools!",
+      company: "GitStage Inc.",
+      location: "The Cloud",
+      websiteUrl: "https://gitstage.dev",
+      socialAccounts: {
+        nodes: [
+          { provider: "TWITTER", url: "https://twitter.com/mockuser", displayName: "mockuser" },
+          { provider: "LINKEDIN", url: "https://linkedin.com/in/mockuser", displayName: "mockuser" }
+        ]
+      },
       followers: { totalCount: 123 },
       repositories: { totalCount: 42 } // In case structure differs
     },

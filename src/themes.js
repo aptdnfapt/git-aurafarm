@@ -1,38 +1,38 @@
 export const themes = [
   {
-    name: 'GitHub (Green)',
-    levels: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'],
+    name: 'GitHub Dark',
+    levels: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
     border: 'gray',
-    title: 'blue',
-    text: 'white'
+    title: '#58a6ff',
+    text: '#c9d1d9'
   },
   {
-    name: 'Ocean (Blue)',
-    levels: ['#ebedf0', '#79b8ff', '#2188ff', '#005cc5', '#032f62'],
-    border: 'blue',
-    title: 'cyan',
-    text: 'cyan'
+    name: 'Ocean Dark',
+    levels: ['#161b22', '#1d3b53', '#1f6feb', '#388bfd', '#79c0ff'],
+    border: '#388bfd',
+    title: '#79c0ff',
+    text: '#c9d1d9'
   },
   {
-    name: 'Dracula (Purple)',
+    name: 'Dracula',
     levels: ['#282a36', '#44475a', '#6272a4', '#bd93f9', '#ff79c6'],
-    border: 'magenta',
-    title: 'magenta',
-    text: 'magenta'
+    border: '#bd93f9',
+    title: '#ff79c6',
+    text: '#f8f8f2'
   },
   {
-    name: 'Fire (Red)',
-    levels: ['#ebedf0', '#ff9b9b', '#ff4b4b', '#c50000', '#800000'],
-    border: 'red',
-    title: 'red',
-    text: 'red'
+    name: 'Fire Dark',
+    levels: ['#161b22', '#450a0a', '#991b1b', '#dc2626', '#f87171'],
+    border: '#ef4444',
+    title: '#f87171',
+    text: '#fee2e2'
   },
   {
-    name: 'Halloween (Orange)',
-    levels: ['#ebedf0', '#ffee4a', '#ffc501', '#fe9600', '#03001c'],
-    border: 'yellow',
-    title: 'yellow',
-    text: 'yellow'
+    name: 'Halloween',
+    levels: ['#161b22', '#631c03', '#bd561d', '#fa7a18', '#fddf68'],
+    border: '#fa7a18',
+    title: '#fddf68',
+    text: '#fa7a18'
   },
   {
     name: 'Catppuccin Mocha',
