@@ -226,8 +226,9 @@ const Profile = ({ user, theme }) => {
         )}
 
         {user.bio && (
-          <Box marginTop={1}>
-            <Text italic color="gray">{user.bio.replace(/\n/g, ' ')}</Text>
+          <Box flexDirection="column" marginBottom={1}>
+            <Label>Bio</Label>
+            <Text italic color={theme.text}>{user.bio.replace(/\n/g, ' ')}</Text>
           </Box>
         )}
       </Box>

@@ -497,7 +497,7 @@ export async function fetchAllStats(flags = {}) {
 
   const stats = await getContributionStats(user.login);
   const result = {
-    user: user,
+    user: stats.data.user, // Use GraphQL user data (includes social accounts, websiteUrl)
     stats: stats.data.user
   };
 
