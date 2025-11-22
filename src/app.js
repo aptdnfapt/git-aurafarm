@@ -18,9 +18,18 @@ const InputHandler = ({ toggleTheme }) => {
 
 // --- UI Components ---
 
-const Label = ({ children }) => <Text color="gray">{children}</Text>;
+const Label = ({ children }) => <Text color="white">{children}</Text>;
 const Value = ({ children, theme }) => <Text bold color={theme.text}>{children}</Text>;
-const Divider = ({ width = 1 }) => <Box width={width}><Text color="gray">│</Text></Box>;
+
+const CalendarLegend = ({ theme }) => (
+  <Box flexDirection="row" justifyContent="flex-end" marginTop={0}>
+    <Text color="gray" dimColor>Less </Text>
+    {theme.levels.slice(1).map((color, i) => (
+       <Text key={i} color={color}>■ </Text>
+    ))}
+    <Text color="gray" dimColor> More</Text>
+  </Box>
+);
 
 const PieChart = ({ data, radius = 6 }) => {
   const diameter = radius * 2;
@@ -67,10 +76,10 @@ const PieChart = ({ data, radius = 6 }) => {
     <Box flexDirection="column" alignItems="center">
       <Box flexDirection="column">{rows}</Box>
       <Box flexDirection="column" marginTop={1} marginLeft={2}>
-        {data.slice(0, 4).map(lang => (
+        {data.map(lang => (
           <Box key={lang.name} flexDirection="row">
             <Text color={lang.color}>■ </Text>
-            <Text color="gray">{lang.name} ({Math.round(lang.percent)}%)</Text>
+            <Text color="white">{lang.name} ({Math.round(lang.percent)}%)</Text>
           </Box>
         ))}
       </Box>
@@ -138,6 +147,7 @@ const Calendar = ({ weeks, theme, width }) => {
     <Box flexDirection="column">
       <MonthHeader weeks={visibleWeeks} />
       {rows}
+      <CalendarLegend theme={theme} />
     </Box>
   );
 };
@@ -208,7 +218,9 @@ const Profile = ({ user, theme }) => {
           <Box flexDirection="column" marginBottom={1}>
             <Label>Socials</Label>
             {social.map((s, i) => (
-              <Text key={i} color={theme.text}>{s.displayName}</Text>
+              <Box key={i} flexDirection="column">
+                <Text color={theme.text}>{s.provider}: {s.url}</Text>
+              </Box>
             ))}
           </Box>
         )}
@@ -231,7 +243,11 @@ const App = ({ flags }) => {
   const [columns, setColumns] = useState(stdout.columns || 80);
 
   useEffect(() => {
-    const onResize = () => setColumns(stdout.columns);
+    const onResize = () => {
+      setColumns(stdout.columns);
+      // Clear screen on resize to prevent artifacts
+      process.stdout.write('\x1Bc');
+    };
     stdout.on('resize', onResize);
     return () => stdout.off('resize', onResize);
   }, [stdout]);
@@ -294,11 +310,8 @@ const App = ({ flags }) => {
                 <Profile user={data.user} theme={currentTheme} />
              </Box>
              
-             {/* Divider */}
-             <Divider />
-
-             {/* Stats */}
-             <Box flexDirection="column" width="50%">
+             {/* Stats with Left Border acting as Divider */}
+             <Box flexDirection="column" width="50%" borderStyle="single" borderLeftColor="gray" borderTop={false} borderBottom={false} borderRight={false} paddingLeft={1}>
                 <Stats stats={data.stats} theme={currentTheme} />
              </Box>
           </Box>

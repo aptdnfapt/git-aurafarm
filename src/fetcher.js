@@ -80,6 +80,9 @@ export function calculateTopLanguages(repositories) {
   if (!repositories || !repositories.nodes) return [];
 
   repositories.nodes.forEach(repo => {
+    // Skip forks
+    if (repo.isFork) return;
+    
     if (repo.languages && repo.languages.edges) {
       repo.languages.edges.forEach(edge => {
         const langName = edge.node.name;
@@ -224,6 +227,7 @@ export async function getContributionStats(username) {
             name
             stargazerCount
             forkCount
+            isFork
             languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
               edges {
                 size
