@@ -41,7 +41,7 @@ npx git-aurafarm
 
 1. Clone the repo:
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/aptdnfapt/git-aurafarm
    cd git-aurafarm
    ```
 2. Install dependencies:
